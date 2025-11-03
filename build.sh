@@ -6,7 +6,7 @@ set -eu
 # /build  - writable directory for output
 
 DOCKERFILE="/source/Dockerfile"
-OUTPUT_TAR="/build/image.tar"
+OUTPUT_TAR="/build/container-image.tar"
 
 ls -l /source
 

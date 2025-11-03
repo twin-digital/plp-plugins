@@ -1,0 +1,25 @@
+pipelines:
+  - id: plp-container-image-builder
+    type: container-image
+    build:
+      context: ./builders/plp-npm-package-builder
+  - id: plp-npm-package-builder
+    type: container-image
+    build:
+      context: ./builders/plp-container-image-builder
+################################################################################
+# - id: plp-npm-package-builder
+#   type: container-image
+#   build:
+#     builder: ghcr.io/twin-digital/plp-image-builder:latest
+#     context: ./builders/plp-container-image-builder
+#     labels:
+#       - name: io.twin-digital.plp.builder-requirements
+#         value: |
+#           privileged: true
+#           # capabilities:
+#           #   - SYS_ADMIN
+#           # securityOptions:
+#           #   - seccomp=unconfined
+#           #   - apparmor=unconfined
+#           #   - systempaths=unconfined

@@ -142,6 +142,48 @@ fi
 
 echo ""
 echo "Configuring npm registry..."
+          
+# get OIDC token and exchange for npm token
+NPM_REGISTRY_TOKEN=""
+echo "Using npm trusted publishing (OIDC)..."
+echo ""
+
+# Step 1: Generate OIDC token from GitHub with npm audience
+echo "Generating OIDC token..."
+OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm:registry.npmjs.org" | jq -r '.value')
+
+if [ -z "$OIDC_TOKEN" ] || [ "$OIDC_TOKEN" = "null" ]; then
+  echo "❌ Error: Failed to generate OIDC token"
+  exit 1
+fi
+
+echo "✅ OIDC token generated"
+echo "Token preview: ${OIDC_TOKEN}..."
+echo ""
+
+# Step 2: Exchange OIDC token for npm registry access token
+echo "Exchanging OIDC token for npm access token..."
+
+# URL-encode the package name (e.g., @scope/package -> %40scope%2Fpackage)
+ENCODED_PACKAGE_NAME=$(printf '%s' "$PACKAGE_NAME" | jq -sRr @uri)
+
+NPM_TOKEN_RESPONSE=$(curl -s -X POST "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/${ENCODED_PACKAGE_NAME}" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${OIDC_TOKEN}")
+
+NPM_REGISTRY_TOKEN=$(echo "$NPM_TOKEN_RESPONSE" | jq -r '.token // empty')
+
+if [ -z "$NPM_REGISTRY_TOKEN" ]; then
+  echo "❌ Error: Failed to exchange OIDC token for npm token"
+  echo "Response: $NPM_TOKEN_RESPONSE"
+  exit 1
+fi
+
+echo "✅ npm access token obtained"
+echo "Token preview: ${NPM_REGISTRY_TOKEN:0:20}..."
+echo ""
+
 
 # Configure npm registry
 npm config set registry "$PLP_NPM_REGISTRY"
@@ -151,7 +193,7 @@ REGISTRY_HOST=$(echo "$PLP_NPM_REGISTRY" | sed -E 's|^https?://||; s|/.*$||')
 
 # Configure authentication
 # Use registry-scoped auth token format
-npm config set "//$REGISTRY_HOST/:_authToken" "$PLP_REGISTRY_TOKEN"
+npm config set "//$REGISTRY_HOST/:_authToken" "$NPM_REGISTRY_TOKEN"
 
 echo "  Registry: $PLP_NPM_REGISTRY"
 echo "  Host: $REGISTRY_HOST"

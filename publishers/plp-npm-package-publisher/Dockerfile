@@ -3,6 +3,7 @@ FROM node:22-alpine
 # Install bash and jq for scripting
 RUN apk add --no-cache \
     bash \
+    curl \
     jq
 
 # Enable corepack for package manager management

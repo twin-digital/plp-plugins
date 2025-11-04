@@ -19,6 +19,7 @@ All publisher plugins receive the following environment variables:
 
 | Variable                   | Description                                 | Example                                    | Required |
 | -------------------------- | ------------------------------------------- | ------------------------------------------ | -------- |
+| `PLP_ARTIFACT_PATH`        | Path to the artifact file                   | `/artifacts/image.tar`                     | Yes      |
 | `PLP_BRANCH_NAME`          | Name of the git branch                      | `main`, `develop`, `feature/xyz`           | No\*     |
 | `PLP_IS_DEFAULT_BRANCH`    | Set to `true` if this is the default branch | `true`                                     | No       |
 | `PLP_PULL_REQUEST_NUMBER`  | Pull request number (if applicable)         | `123`                                      | No       |

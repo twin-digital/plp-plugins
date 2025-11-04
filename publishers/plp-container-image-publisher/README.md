@@ -17,7 +17,7 @@ Publisher plugin for publishing OCI container images to container registries.
 
 | Variable                | Description                             | Example                                    |
 | ----------------------- | --------------------------------------- | ------------------------------------------ |
-| `PLP_IMAGE_PATH`        | Path to the OCI image tarball           | `/artifacts/image.tar`                     |
+| `PLP_ARTIFACT_PATH`     | Path to the OCI image tarball           | `/artifacts/image.tar`                     |
 | `PLP_IMAGE_REPOSITORY`  | Full repository path including registry | `ghcr.io/org/repo/image`                   |
 | `PLP_COMMIT_SHA`        | Git commit SHA                          | `6c2271197bf6c7aae6d17545abdd67586af1171d` |
 | `PLP_REGISTRY_USERNAME` | Registry username                       | `github-username`                          |
@@ -112,7 +112,7 @@ Results in tags: `release-2024`
 
 ```bash
 docker run --rm \
-  -e PLP_IMAGE_PATH=/artifacts/image.tar \
+  -e PLP_ARTIFACT_PATH=/artifacts/image.tar \
   -e PLP_IMAGE_REPOSITORY=ghcr.io/myorg/myapp \
   -e PLP_BRANCH_NAME=main \
   -e PLP_IS_DEFAULT_BRANCH=true \
@@ -129,7 +129,7 @@ docker run --rm \
 - name: Publish container image
   run: |
     docker run --rm \
-      -e PLP_IMAGE_PATH=/artifacts/image.tar \
+      -e PLP_ARTIFACT_PATH=/artifacts/image.tar \
       -e PLP_IMAGE_REPOSITORY=ghcr.io/${{ github.repository }}/myapp \
       -e PLP_BRANCH_NAME=${{ github.ref_name }} \
       -e PLP_IS_DEFAULT_BRANCH=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }} \

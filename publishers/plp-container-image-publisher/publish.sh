@@ -13,7 +13,7 @@ echo ""
 
 # Validate required environment variables
 REQUIRED_VARS=(
-  "PLP_IMAGE_PATH"
+  "PLP_ARTIFACT_PATH"
   "PLP_IMAGE_REPOSITORY"
   "PLP_COMMIT_SHA"
   "PLP_REGISTRY_USERNAME"
@@ -33,14 +33,14 @@ if [ -z "${PLP_BRANCH_NAME:-}" ] && [ -z "${PLP_TAG_NAME:-}" ] && [ -z "${PLP_PU
   exit $EXIT_MISSING_VAR
 fi
 
-# Validate image file exists
-if [ ! -f "$PLP_IMAGE_PATH" ]; then
-  echo "❌ Error: Image file not found at $PLP_IMAGE_PATH"
+# Validate artifact file exists
+if [ ! -f "$PLP_ARTIFACT_PATH" ]; then
+  echo "❌ Error: Artifact file not found at $PLP_ARTIFACT_PATH"
   exit $EXIT_VALIDATION_FAILURE
 fi
 
 echo "Configuration:"
-echo "  Image path: $PLP_IMAGE_PATH"
+echo "  Artifact path: $PLP_ARTIFACT_PATH"
 echo "  Repository: $PLP_IMAGE_REPOSITORY"
 echo "  Commit SHA: $PLP_COMMIT_SHA"
 if [ -n "${PLP_BRANCH_NAME:-}" ]; then
@@ -58,11 +58,11 @@ fi
 echo ""
 
 echo "Validating image..."
-IMAGE_SIZE=$(stat -f%z "$PLP_IMAGE_PATH" 2>/dev/null || stat -c%s "$PLP_IMAGE_PATH" 2>/dev/null)
+IMAGE_SIZE=$(stat -f%z "$PLP_ARTIFACT_PATH" 2>/dev/null || stat -c%s "$PLP_ARTIFACT_PATH" 2>/dev/null)
 echo "  Image size: $(numfmt --to=iec-i --suffix=B $IMAGE_SIZE 2>/dev/null || echo "$IMAGE_SIZE bytes")"
 
 # Test skopeo can read the image
-if ! skopeo inspect "oci-archive:$PLP_IMAGE_PATH" > /dev/null 2>&1; then
+if ! skopeo inspect "oci-archive:$PLP_ARTIFACT_PATH" > /dev/null 2>&1; then
   echo "❌ Error: Failed to inspect OCI image - file may be corrupted or invalid"
   exit $EXIT_VALIDATION_FAILURE
 fi
@@ -131,7 +131,7 @@ echo "Pushing image with primary tag..."
 echo "  Destination: $FULL_IMAGE"
 
 if ! skopeo copy \
-  "oci-archive:$PLP_IMAGE_PATH" \
+  "oci-archive:$PLP_ARTIFACT_PATH" \
   "docker://$FULL_IMAGE" \
   --dest-creds "$PLP_REGISTRY_USERNAME:$PLP_REGISTRY_PASSWORD" 2>&1; then
   echo "❌ Error: Failed to push image"

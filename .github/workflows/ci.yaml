@@ -24,20 +24,3 @@ permissions:
 jobs:
   orchestrate:
     uses: twin-digital/pipeline-platform/.github/workflows/main.yml@develop
-
-  check-token:
-    needs: orchestrate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Fetch and decode OIDC token
-        id: oidc
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const token = await core.getIDToken('sts.amazonaws.com')
-            console.log('OIDC token acquired')
-            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'))
-            console.log('token:', JSON.stringify(payload, null, 2))
-            console.log('sub:', payload.sub)
-            console.log('job_workflow_ref:', payload['job_workflow_ref'])
-            console.log('repository_owner:', payload['repository_owner'])

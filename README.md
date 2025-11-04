@@ -4,6 +4,7 @@ Pipeline platform component for building OCI container images.
 
 ## TODO
 
+- avoid need for --privileged (switch to rootless)
 - Enable fuse
   - Need in devcontainer (might require reconfiguring Docker host vm)
   - ENV BUILDKITD_FLAGS="--oci-worker-no-process-sandbox" -> ENV BUILDKITD_FLAGS="--oci-worker-no-process-sandbox --oci-worker-snapshotter=fuse-overlayfs"

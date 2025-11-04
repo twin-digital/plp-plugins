@@ -16,12 +16,10 @@ Publisher plugin for publishing NPM packages to npm registries (npm, GitHub Pack
 
 ### Required
 
-| Variable             | Description                   | Example                                    |
-| -------------------- | ----------------------------- | ------------------------------------------ |
-| `PLP_ARTIFACT_PATH`  | Path to the package tarball   | `/artifacts/package.tgz`                   |
-| `PLP_NPM_REGISTRY`   | NPM registry URL              | `https://registry.npmjs.org`               |
-| `PLP_COMMIT_SHA`     | Git commit SHA                | `6c2271197bf6c7aae6d17545abdd67586af1171d` |
-| `PLP_REGISTRY_TOKEN` | Registry authentication token | `npm_xxxxx`                                |
+| Variable            | Description                 | Example                                    |
+| ------------------- | --------------------------- | ------------------------------------------ |
+| `PLP_ARTIFACT_PATH` | Path to the package tarball | `/artifacts/package.tgz`                   |
+| `PLP_COMMIT_SHA`    | Git commit SHA              | `6c2271197bf6c7aae6d17545abdd67586af1171d` |
 
 At least one of the following must also be set:
 
@@ -31,15 +29,24 @@ At least one of the following must also be set:
 
 ### Optional
 
-| Variable                  | Description                          | Example                   |
-| ------------------------- | ------------------------------------ | ------------------------- |
-| `PLP_BRANCH_NAME`         | Git branch name                      | `main`, `develop`         |
-| `PLP_IS_DEFAULT_BRANCH`   | Set to `true` for default branch     | `true`                    |
-| `PLP_TAG_NAME`            | Git tag name                         | `v1.2.3`                  |
-| `PLP_PULL_REQUEST_NUMBER` | Pull request number                  | `123`                     |
-| `PLP_NPM_ACCESS`          | Package access level                 | `public`, `restricted`    |
-| `PLP_PUBLISH_PR`          | Set to `true` to publish PR builds   | `true` (default: `false`) |
-| `PLP_ALLOW_REPUBLISH`     | Allow republishing existing versions | `true` (default: `false`) |
+| Variable                         | Description                                                        | Example                      |
+| -------------------------------- | ------------------------------------------------------------------ | ---------------------------- |
+| `PLP_NPM_REGISTRY`               | NPM registry URL (defaults to public npm registry)                 | `https://registry.npmjs.org` |
+| `PLP_REGISTRY_TOKEN`             | Registry authentication token (required for non-public registries) | `npm_xxxxx`                  |
+| `PLP_BRANCH_NAME`                | Git branch name                                                    | `main`, `develop`            |
+| `PLP_IS_DEFAULT_BRANCH`          | Set to `true` for default branch                                   | `true`                       |
+| `PLP_TAG_NAME`                   | Git tag name                                                       | `v1.2.3`                     |
+| `PLP_PULL_REQUEST_NUMBER`        | Pull request number                                                | `123`                        |
+| `PLP_NPM_ACCESS`                 | Package access level                                               | `public`, `restricted`       |
+| `PLP_PUBLISH_PR`                 | Set to `true` to publish PR builds                                 | `true` (default: `false`)    |
+| `PLP_ALLOW_REPUBLISH`            | Allow republishing existing versions                               | `true` (default: `false`)    |
+| `ACTIONS_ID_TOKEN_REQUEST_TOKEN` | GitHub Actions OIDC token (for trusted publishing)                 | _auto-provided_              |
+| `ACTIONS_ID_TOKEN_REQUEST_URL`   | GitHub Actions OIDC URL (for trusted publishing)                   | _auto-provided_              |
+
+**Notes:**
+
+- `PLP_NPM_REGISTRY` defaults to `https://registry.npmjs.org` if not specified
+- When publishing to the public npm registry, you can omit `PLP_REGISTRY_TOKEN` and use npm trusted publishing instead. See the [NPM Trusted Publishing](#npm-trusted-publishing-oidc) section for details.
 
 ## Publishing Behavior
 
@@ -135,6 +142,77 @@ PLP_NPM_REGISTRY=https://registry.example.com
 PLP_REGISTRY_TOKEN=your-token
 ```
 
+## NPM Trusted Publishing (OIDC)
+
+This publisher supports [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) for the public npm registry when publishing from GitHub Actions.
+
+### How it Works
+
+When publishing to `https://registry.npmjs.org` **without** providing `PLP_REGISTRY_TOKEN`, the publisher will automatically:
+
+1. Generate a GitHub OIDC token with audience `npm:registry.npmjs.org`
+2. Exchange the OIDC token for a short-lived npm access token via the npm API
+3. Use the short-lived token to publish the package
+
+This provides secure, tokenless publishing without storing long-lived npm tokens as secrets.
+
+### Why Manual Token Exchange?
+
+The npm CLI's built-in OIDC support (plain `npm publish`) doesn't work inside containers because it requires access to the GitHub Actions environment. This publisher manually performs the token exchange using the [npm OIDC token exchange API](https://docs.npmjs.com/api/oidc-token-exchange).
+
+### Setup Requirements
+
+To use trusted publishing:
+
+1. **Configure your package on npmjs.org:**
+
+   - Go to your package settings on npmjs.com
+   - Navigate to "Publishing Access"
+   - Add GitHub as a trusted publisher
+   - Specify your repository and workflow details
+
+2. **Ensure GitHub Actions has OIDC permissions:**
+
+   ```yaml
+   permissions:
+     id-token: write # Required for OIDC token generation
+     packages: write
+   ```
+
+3. **Don't provide `PLP_REGISTRY_TOKEN`:**
+   - For public npm registry, omit `PLP_REGISTRY_TOKEN` to use OIDC
+   - The publisher will automatically detect and use trusted publishing
+
+### Example (Trusted Publishing)
+
+```bash
+docker run --rm \
+  -e PLP_ARTIFACT_PATH=/artifacts/mypackage-1.2.3.tgz \
+  -e PLP_COMMIT_SHA=6c2271197bf6c7aae6d17545abdd67586af1171d \
+  -e PLP_BRANCH_NAME=main \
+  -e PLP_IS_DEFAULT_BRANCH=true \
+  -e PLP_NPM_ACCESS=public \
+  -e ACTIONS_ID_TOKEN_REQUEST_TOKEN=$ACTIONS_ID_TOKEN_REQUEST_TOKEN \
+  -e ACTIONS_ID_TOKEN_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL \
+  -v /path/to/artifacts:/artifacts:ro \
+  ghcr.io/twin-digital/plp-plugins/plp-npm-package-publisher:latest
+```
+
+**Note:** Both `PLP_REGISTRY_TOKEN` and `PLP_NPM_REGISTRY` are omitted. The registry defaults to `https://registry.npmjs.org`, and authentication uses GitHub Actions OIDC.
+
+### Authentication Decision Flow
+
+The publisher determines authentication method using this logic:
+
+1. **If `PLP_REGISTRY_TOKEN` is set:** Use the provided token (any registry)
+2. **Else if registry is `https://registry.npmjs.org`** (default or explicit): Use npm trusted publishing (OIDC)
+3. **Else:** Fail with error (non-public registry requires explicit token)
+
+### References
+
+- [npm Trusted Publishers Documentation](https://docs.npmjs.com/trusted-publishers)
+- [npm OIDC Token Exchange API](https://docs.npmjs.com/api/oidc-token-exchange)
+
 ## Version Conflict Handling
 
 By default, the publisher will **fail** if the package version already exists in the registry:
@@ -157,7 +235,6 @@ PLP_ALLOW_REPUBLISH=true
 ```bash
 docker run --rm \
   -e PLP_ARTIFACT_PATH=/artifacts/mypackage-1.2.3.tgz \
-  -e PLP_NPM_REGISTRY=https://registry.npmjs.org \
   -e PLP_COMMIT_SHA=6c2271197bf6c7aae6d17545abdd67586af1171d \
   -e PLP_REGISTRY_TOKEN=npm_xxxxx \
   -e PLP_BRANCH_NAME=main \
@@ -166,6 +243,8 @@ docker run --rm \
   -v /path/to/artifacts:/artifacts:ro \
   ghcr.io/twin-digital/plp-plugins/plp-npm-package-publisher:latest
 ```
+
+**Note:** `PLP_NPM_REGISTRY` is omitted in this example, so it defaults to `https://registry.npmjs.org`.
 
 ## Exit Codes
 

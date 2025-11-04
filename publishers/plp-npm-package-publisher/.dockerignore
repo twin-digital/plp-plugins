@@ -1,3 +1,4 @@
 *
 !Dockerfile
+!get-npm-oidc-token.sh
 !publish.sh

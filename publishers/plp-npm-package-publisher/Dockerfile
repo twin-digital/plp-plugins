@@ -12,9 +12,10 @@ RUN corepack enable
 # Create non-root user
 RUN addgroup -S plp && adduser -S plp -G plp
 
-# Copy entrypoint script
+# Copy scripts
 COPY publish.sh /usr/local/bin/publish.sh
-RUN chmod +x /usr/local/bin/publish.sh
+COPY get-npm-oidc-token.sh /usr/local/bin/get-npm-oidc-token.sh
+RUN chmod +x /usr/local/bin/publish.sh /usr/local/bin/get-npm-oidc-token.sh
 
 # Switch to non-root user
 USER plp

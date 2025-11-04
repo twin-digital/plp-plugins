@@ -1,14 +1,30 @@
 #!/bin/sh
 set -eu
 
-# Expected mounts:
-# /source - read-only source directory containing Dockerfile
-# /build  - writable directory for output
+echo "=========================================="
+echo "Container Image Builder"
+echo "=========================================="
+echo ""
 
-DOCKERFILE="/source/Dockerfile"
-OUTPUT_TAR="/build/container-image.tar"
+# Set default paths if not provided
+PLP_SOURCE_PATH="${PLP_SOURCE_PATH:-/source}"
+PLP_BUILD_PATH="${PLP_BUILD_PATH:-/build}"
+PLP_CACHE_PATH="${PLP_CACHE_PATH:-/tmp/cache}"
 
-ls -l /source
+# Create cache directory if it doesn't exist
+mkdir -p "$PLP_CACHE_PATH"
+
+echo "Paths:"
+echo "  Source: $PLP_SOURCE_PATH"
+echo "  Build: $PLP_BUILD_PATH"
+echo "  Cache: $PLP_CACHE_PATH"
+echo ""
+
+DOCKERFILE="$PLP_SOURCE_PATH/Dockerfile"
+OUTPUT_TAR="$PLP_BUILD_PATH/container-image.tar"
+
+ls -l "$PLP_SOURCE_PATH"
+echo ""
 
 echo "Building OCI image from $DOCKERFILE..."
 
@@ -18,27 +34,34 @@ if [ ! -f "$DOCKERFILE" ]; then
   exit 1
 fi
 
-# Verify /build is writable
-if [ ! -w "/build" ]; then
-  echo "❌ Error: /build directory is not writable"
+# Verify build path is writable
+if [ ! -w "$PLP_BUILD_PATH" ]; then
+  echo "❌ Error: $PLP_BUILD_PATH directory is not writable"
   exit 1
 fi
 
 echo "Building image with BuildKit..."
-
-  # --opt label:org.opencontainers.image.source="${GIT_REPOSITORY_URL}" \
-  # --opt label:org.opencontainers.image.revision="${GIT_SHA}" \
-  # --opt label:org.opencontainers.image.created="${CREATED}" \
+echo ""
 
 CREATED="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 buildctl-daemonless.sh build \
   --frontend dockerfile.v0 \
-  --local context=/source \
-  --local dockerfile=/source \
+  --local context="$PLP_SOURCE_PATH" \
+  --local dockerfile="$PLP_SOURCE_PATH" \
+  --export-cache type=local,dest="$PLP_CACHE_PATH/buildkit" \
+  --import-cache type=local,src="$PLP_CACHE_PATH/buildkit" \
   --output "type=oci,dest=${OUTPUT_TAR},\
-annotation.org.opencontainers.image.source=${GIT_REPOSITORY_URL},\
-annotation.org.opencontainers.image.revision=${GIT_SHA},\
+annotation.org.opencontainers.image.source=${GIT_REPOSITORY_URL:-},\
+annotation.org.opencontainers.image.revision=${GIT_SHA:-},\
 annotation.org.opencontainers.image.created=${CREATED}"
 
-echo "✅ Successfully built and saved image to $OUTPUT_TAR"
-echo "Image size: $(du -h "$OUTPUT_TAR" | cut -f1)"
+echo ""
+echo "=========================================="
+echo "Build Complete"
+echo "=========================================="
+echo "Artifact: container-image.tar"
+echo "Size: $(du -h "$OUTPUT_TAR" | cut -f1)"
+echo "Location: $OUTPUT_TAR"
+echo ""
+
+ls -lh "$PLP_BUILD_PATH"

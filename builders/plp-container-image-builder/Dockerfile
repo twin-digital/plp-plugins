@@ -11,5 +11,10 @@ RUN mkdir -p /source /build && chown 1000:1000 /source && chown 1000:1000 /build
 COPY build.sh /usr/local/bin/build.sh
 RUN chmod +x /usr/local/bin/build.sh
 
+# Default environment variables (can be overridden at runtime)
+ENV PLP_SOURCE_PATH=/source
+ENV PLP_BUILD_PATH=/build
+ENV PLP_CACHE_PATH=/tmp/cache
+
 # Set the entrypoint to the build script
 ENTRYPOINT ["/usr/local/bin/build.sh"]

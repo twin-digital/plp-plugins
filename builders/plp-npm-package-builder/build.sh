@@ -5,6 +5,9 @@ set -euo pipefail
 export NVM_DIR="/home/plp/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
+# Load Alpine architecture override for musl builds
+[ -s "$HOME/.nvm/custom/arch-override.sh" ] && . "$HOME/.nvm/custom/arch-override.sh"
+
 echo "=========================================="
 echo "NPM Package Builder"
 echo "=========================================="

@@ -151,7 +151,7 @@ REGISTRY_HOST=$(echo "$PLP_NPM_REGISTRY" | sed -E 's|^https?://||; s|/.*$||')
 
 # Configure authentication
 # Use registry-scoped auth token format
-# npm config set "//$REGISTRY_HOST/:_authToken" "$PLP_REGISTRY_TOKEN"
+npm config set "//$REGISTRY_HOST/:_authToken" "$PLP_REGISTRY_TOKEN"
 
 echo "  Registry: $PLP_NPM_REGISTRY"
 echo "  Host: $REGISTRY_HOST"

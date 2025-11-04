@@ -2,6 +2,7 @@ units:
   - path: ./builders/plp-npm-package-builder
   - path: ./builders/plp-container-image-builder
   - path: ./publishers/plp-container-image-publisher
+  - path: ./publishers/plp-npm-package-publisher
 ################################################################################
 # - id: plp-npm-package-builder
 #   type: container-image

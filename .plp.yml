@@ -1,12 +1,6 @@
 pipelines:
-  - id: plp-container-image-builder
-    type: container-image
-    build:
-      context: ./builders/plp-npm-package-builder
-  - id: plp-npm-package-builder
-    type: container-image
-    build:
-      context: ./builders/plp-container-image-builder
+  - path: ./builders/plp-npm-package-builder
+  - path: ./builders/plp-container-image-builder
 ################################################################################
 # - id: plp-npm-package-builder
 #   type: container-image

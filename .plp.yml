@@ -1,4 +1,4 @@
-pipelines:
+units:
   - path: ./builders/plp-npm-package-builder
   - path: ./builders/plp-container-image-builder
 ################################################################################

@@ -19,7 +19,17 @@ PLP_BUILD_PATH="${PLP_BUILD_PATH:-/build}"
 PLP_CACHE_PATH="${PLP_CACHE_PATH:-/tmp/cache}"
 
 # Create cache directory if it doesn't exist
-mkdir -p "$PLP_CACHE_PATH"
+mkdir -p "$PLP_CACHE_PATH" 2>/dev/null || {
+    echo "⚠️  Warning: Cannot create cache directory at $PLP_CACHE_PATH"
+    echo "   Cache will not be available for this build."
+}
+
+# Verify build path is writable
+if [ ! -w "$PLP_BUILD_PATH" ]; then
+    echo "❌ Error: Build directory $PLP_BUILD_PATH is not writable"
+    echo "   Ensure the directory has appropriate permissions (e.g., chmod 777) or is owned by UID 1000"
+    exit 1
+fi
 
 echo "Paths:"
 echo "  Source: $PLP_SOURCE_PATH"
